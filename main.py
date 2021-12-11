@@ -4,12 +4,16 @@ from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
 import time
 import telebot
+from telebot import types
 from settings import bot_token
 
 WEBHOOK_URL_BASE = 'https://magiclobster.ml'
 WEBHOOK_URL_PATH = f'/{bot_token}'
 
 bot  = telebot.TeleBot(bot_token)
+
+def encode(expr):
+    return str(expr).encode("utf-8").hex()
 
 def decode(expr):
 		return eval(bytes.fromhex(expr).decode("utf-8"))
@@ -110,9 +114,53 @@ def set_webhook():
 # Bot commands and handlers
 
 
-@bot.message_handler(commands=['test'])
-def handle_test(message):
-	bot.send_message(message.chat.id, 'OK')
+@bot.message_handler(commands=["start"])
+def send_welcome(message):
+	if(message.chat.type == 'private'):
+		m = types.InlineKeyboardMarkup()
+		m.row(types.InlineKeyboardButton('Start playing!',\
+				 switch_inline_query=''))
+		bot.send_message(message.chat.id, 'Hi there! If you want to have fun share a game with your friends and start playing!', reply_markup=m)
+
+@bot.callback_query_handler(func=lambda call: call.game_short_name)
+def callback_handler(call):
+	data = {
+		'user_id' : call.from_user.id,
+		'chat_id': call.message.chat.id if call.message else None,
+		'message_id': call.message.id if call.message else None,
+		'inline_message_id': call.inline_message_id 
+	}
+
+	enc_data = encode(data)
+	print(enc_data)
+	
+	bot.answer_callback_query(call.id, url=f'https://sharp-wright-258540.netlify.app/{call.game_short_name}/#data={enc_data}')
+	# bot.answer_callback_query(call.id, url=f'http://127.0.0.1:5500/DumbGame/#data={enc_data}')
+
+games = {
+	'dumbgame': 'Dumb Game',
+	'vector': 'Vector'
+}
+
+@bot.inline_handler(lambda query: True)
+def inline_query_handler(inline_query):
+	try:
+		res = []
+		i = 1;
+		for game in games:
+			# make inline keyboard
+			m = types.InlineKeyboardMarkup()
+			m.row(types.InlineKeyboardButton(f'Play {games[game]}!', callback_game=game), types.InlineKeyboardButton('Share',\
+				 switch_inline_query=f'{game}'))
+
+			r = types.InlineQueryResultGame(f'{i}', f'{game}', reply_markup=m)
+			res.append(r)
+			i+=1
+
+		bot.answer_inline_query(inline_query.id, res)
+	except Exception as e:
+		print(e)
+
 
 if __name__ == '__main__':
 	app.run(host = '0.0.0.0')
