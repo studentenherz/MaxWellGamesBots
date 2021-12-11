@@ -2,11 +2,12 @@ import flask
 from flask import Flask 
 from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
-import os
+import time
 import telebot
 from settings import bot_token
 
 WEBHOOK_URL_BASE = 'https://magiclobster.ml'
+WEBHOOK_URL_PATH = f'/{bot_token}'
 
 bot  = telebot.TeleBot(bot_token)
 
@@ -85,7 +86,7 @@ api.add_resource(GetScoreBoard, '/getScoreBoard')
 def hello():
 	return "<h1 style='color:blue'>Hello There!</h1>"
 
-@app.route(f'/{bot_token}', methods=['POST'])
+@app.route(WEBHOOK_URL_PATH, methods=['POST'])
 def webhook():
 	if flask.request.headers.get('content-type') == 'application/json':
 		json_string = flask.request.get_data().decode('utf-8')
@@ -95,8 +96,14 @@ def webhook():
 	else:
 		flask.abort(403)
 
-# Set webhook
-bot.set_webhook(url=WEBHOOK_URL_BASE + f'/{bot_token}')
+
+@app.route(WEBHOOK_URL_PATH + '/setWebhook', methods=['GET'])
+def set_webhook():
+	# Remove old
+	bot.remove_webhook()
+	time.sleep(0.1)
+	# Set webhook
+	bot.set_webhook(url=WEBHOOK_URL_BASE + f'/{bot_token}')
 
 #####################################################################
 # Bot commands and handlers
