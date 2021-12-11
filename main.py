@@ -104,6 +104,7 @@ def set_webhook():
 	time.sleep(0.1)
 	# Set webhook
 	bot.set_webhook(url=WEBHOOK_URL_BASE + f'/{bot_token}')
+	return '', 200
 
 #####################################################################
 # Bot commands and handlers
