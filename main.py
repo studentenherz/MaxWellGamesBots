@@ -6,11 +6,19 @@ import time
 import telebot
 from telebot import types
 from settings import bot_token
+bot  = telebot.TeleBot(bot_token)
+
 
 WEBHOOK_URL_BASE = 'https://magiclobster.ml'
 WEBHOOK_URL_PATH = f'/{bot_token}'
 
-bot  = telebot.TeleBot(bot_token)
+MSG_START = 'Hi there! If you want to have fun share a game with your friends and start playing!'
+MSG_ABOUT = "This all started as almost everything else starts for me: I saw someone doing it and I wondered if I could do it too.\n\n<i>DumbGame</i> was my way of testing tha I was doing ok with Telegram's API for games.\n\n<i>Vector</i> is the first trial of a playable game, inspired in a game I played years ago of which I can't remeber the name. It is made using SVG instead of canvas, as I tought it would be better to generate the geometry on the fly and draw it. Code can be seen <a href='https://github.com/studentenherz/MaxwellGamesTelegramBot-games/blob/master/Vector/js/game.js'>here</a> (as well as in your own browser when game is loaded), please help me improve it."
+
+games = {
+	'dumbgame': 'Dumb Game',
+	'vector': 'Vector'
+}
 
 def encode(expr):
     return str(expr).encode("utf-8").hex()
@@ -113,15 +121,6 @@ def set_webhook():
 #####################################################################
 # Bot commands and handlers
 
-
-@bot.message_handler(commands=["start"])
-def send_welcome(message):
-	if(message.chat.type == 'private'):
-		m = types.InlineKeyboardMarkup()
-		m.row(types.InlineKeyboardButton('Start playing!',\
-				 switch_inline_query=''))
-		bot.send_message(message.chat.id, 'Hi there! If you want to have fun share a game with your friends and start playing!', reply_markup=m)
-
 @bot.callback_query_handler(func=lambda call: call.game_short_name)
 def callback_handler(call):
 	data = {
@@ -136,11 +135,6 @@ def callback_handler(call):
 	
 	bot.answer_callback_query(call.id, url=f'https://sharp-wright-258540.netlify.app/{call.game_short_name}/#data={enc_data}')
 	# bot.answer_callback_query(call.id, url=f'http://127.0.0.1:5500/DumbGame/#data={enc_data}')
-
-games = {
-	'dumbgame': 'Dumb Game',
-	'vector': 'Vector'
-}
 
 @bot.inline_handler(lambda query: True)
 def inline_query_handler(inline_query):
@@ -161,6 +155,23 @@ def inline_query_handler(inline_query):
 	except Exception as e:
 		print(e)
 
+@bot.message_handler(commands=["start"])
+def send_welcome(message):
+	if(message.chat.type == 'private'):
+		m = types.InlineKeyboardMarkup()
+		m.row(types.InlineKeyboardButton('Start playing!',\
+				 switch_inline_query=''))
+		bot.send_message(message.chat.id, MSG_START , reply_markup=m)
+
+
+@bot.message_handler(commands=["about"])
+def about_message(message):
+	if(message.chat.type == 'private'):
+		bot.send_message(message.chat.id, MSG_ABOUT, parse_mode='HTML', disable_web_page_preview=True)
+
 
 if __name__ == '__main__':
-	app.run(host = '0.0.0.0')
+	# app.run(host = '0.0.0.0')
+
+	#just for testing purposes
+	bot.polling()
