@@ -1,3 +1,4 @@
+import flask
 from flask import Flask 
 from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
@@ -5,10 +6,12 @@ import os
 import telebot
 from settings import bot_token
 
+WEBHOOK_URL_BASE = 'https://magiclobster.ml'
+
 bot  = telebot.TeleBot(bot_token)
 
 def decode(expr):
-    return eval(bytes.fromhex(expr).decode("utf-8"))
+		return eval(bytes.fromhex(expr).decode("utf-8"))
 
 app =  Flask('GamesAPI')
 api =  Api(app)
@@ -80,7 +83,28 @@ api.add_resource(GetScoreBoard, '/getScoreBoard')
 
 @app.route("/")
 def hello():
-    return "<h1 style='color:blue'>Hello There!</h1>"
+	return "<h1 style='color:blue'>Hello There!</h1>"
+
+@app.route(f'/{bot_token}', methods=['POST'])
+def webhook():
+	if flask.request.headers.get('content-type') == 'application/json':
+		json_string = flask.request.get_data().decode('utf-8')
+		update = telebot.types.Update.de_json(json_string)
+		bot.process_new_updates([update])
+		return ''
+	else:
+		flask.abort(403)
+
+# Set webhook
+bot.set_webhook(url=WEBHOOK_URL_BASE + f'/{bot_token}')
+
+#####################################################################
+# Bot commands and handlers
+
+
+@bot.message_handler(commands=['test'])
+def handle_test(message):
+	bot.send_message(message.chat.id, 'OK')
 
 if __name__ == '__main__':
 	app.run(host = '0.0.0.0')
