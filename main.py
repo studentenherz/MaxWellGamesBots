@@ -155,7 +155,7 @@ def inline_query_handler(inline_query):
 	except Exception as e:
 		print(e)
 
-@bot.message_handler(commands=["start"])
+@bot.message_handler(commands=["start", "play"])
 def send_welcome(message):
 	if(message.chat.type == 'private'):
 		m = types.InlineKeyboardMarkup()
